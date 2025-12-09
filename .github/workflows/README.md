@@ -1,47 +1,61 @@
 # GitHub Actions Deployment Setup
 
-## Required Secrets
+This workflow uses **OIDC (OpenID Connect)** for secure, secretless authentication to Azure.
 
-Configure these in **Settings > Secrets and variables > Actions > Secrets**:
+## Step 1: Create Federated Credential
 
-| Secret | Description |
-|--------|-------------|
-| `AZURE_CREDENTIALS` | Azure service principal JSON (see below) |
-| `ACR_USERNAME` | Azure Container Registry username |
-| `ACR_PASSWORD` | Azure Container Registry password |
-
-### Create Azure Service Principal
+### Create App Registration (if not exists)
 
 ```bash
-az ad sp create-for-rbac --name "github-actions-sp" \
-  --role contributor \
-  --scopes /subscriptions/{subscription-id}/resourceGroups/rg-dev \
-  --json-auth
+az ad app create --display-name "github-actions-oidc"
 ```
 
-Copy the entire JSON output to `AZURE_CREDENTIALS` secret.
+Note the `appId` from the output.
 
-### Get ACR Credentials
+### Create Service Principal
 
 ```bash
-az acr credential show --name {acr-name}
+az ad sp create --id {app-id}
 ```
 
-Use `username` for `ACR_USERNAME` and `password` for `ACR_PASSWORD`.
+### Add Federated Credential
 
-## Required Variables
+```bash
+az ad app federated-credential create --id {app-id} --parameters '{
+  "name": "github-actions-dev",
+  "issuer": "https://token.actions.githubusercontent.com",
+  "subject": "repo:ContosoAHakim/TechWorkshop-L300-GitHub-Copilot-and-platform:ref:refs/heads/dev",
+  "audiences": ["api://AzureADTokenExchange"]
+}'
+```
+
+### Assign Roles
+
+```bash
+# Contributor on resource group
+az role assignment create --assignee {app-id} --role Contributor --scope /subscriptions/f146eaa1-f5cb-45fe-9fb3-98e79595aecb/resourceGroups/rg-dev
+
+# AcrPush for container registry
+az role assignment create --assignee {app-id} --role AcrPush --scope /subscriptions/f146eaa1-f5cb-45fe-9fb3-98e79595aecb/resourceGroups/rg-dev/providers/Microsoft.ContainerRegistry/registries/crxbpvytnzezeiq
+```
+
+## Step 2: Configure GitHub Variables
 
 Configure these in **Settings > Secrets and variables > Actions > Variables**:
 
-| Variable | Example |
-|----------|---------|
+| Variable | Value |
+|----------|-------|
+| `AZURE_CLIENT_ID` | App registration client ID |
+| `AZURE_TENANT_ID` | `b05ecba5-4093-4f8e-991c-3596a0ba03a3` |
+| `AZURE_SUBSCRIPTION_ID` | `f146eaa1-f5cb-45fe-9fb3-98e79595aecb` |
 | `AZURE_WEBAPP_NAME` | `app-xbpvytnzezeiq` |
 | `ACR_LOGIN_SERVER` | `crxbpvytnzezeiq.azurecr.io` |
+| `ACR_NAME` | `crxbpvytnzezeiq` |
 
-### Get Variable Values
+### Get Values
 
 ```bash
 azd env get-values
 ```
 
-Use `SERVICE_WEB_NAME` for `AZURE_WEBAPP_NAME` and `ACR_LOGIN_SERVER` for `ACR_LOGIN_SERVER`.
+**No secrets required!** OIDC uses short-lived tokens issued by GitHub.
