@@ -27,6 +27,11 @@ namespace ZavaStorefront.Controllers
                 return BadRequest(new { error = "Message cannot be empty" });
             }
 
+            if (request.Message.Length > 4000)
+            {
+                return BadRequest(new { error = "Message is too long. Maximum length is 4000 characters." });
+            }
+
             try
             {
                 var response = await _chatService.SendMessageAsync(request.Message);

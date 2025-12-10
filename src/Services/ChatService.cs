@@ -7,7 +7,7 @@ namespace ZavaStorefront.Services
 {
     public class ChatService
     {
-        private readonly AzureOpenAIClient _client;
+        private readonly AzureOpenAIClient? _client;
         private readonly string _deploymentName;
         private readonly ILogger<ChatService> _logger;
 
@@ -21,7 +21,7 @@ namespace ZavaStorefront.Services
             if (string.IsNullOrEmpty(endpoint))
             {
                 _logger.LogWarning("AI_FOUNDRY_ENDPOINT is not configured. Chat functionality will not be available.");
-                _client = null!;
+                _client = null;
                 return;
             }
 
@@ -61,7 +61,7 @@ namespace ZavaStorefront.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error calling AI Foundry endpoint");
-                return $"Error: {ex.Message}";
+                return "An error occurred while processing your message. Please try again later.";
             }
         }
     }
