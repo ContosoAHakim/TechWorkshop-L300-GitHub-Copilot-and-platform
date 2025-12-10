@@ -87,6 +87,17 @@ module acr './modules/acr.bicep' = {
   }
 }
 
+// Deploy Azure AI Foundry
+module aiFoundry './modules/ai-foundry.bicep' = {
+  name: 'aiFoundry'
+  scope: rg
+  params: {
+    location: location
+    aiFoundryAccountName: _aiFoundryAccountName
+    tags: tags
+  }
+}
+
 // Deploy App Service (Plan + Web App)
 module appService './modules/appservice.bicep' = {
   name: 'appservice'
@@ -99,6 +110,9 @@ module appService './modules/appservice.bicep' = {
     containerRegistryLoginServer: acr.outputs.loginServer
     applicationInsightsConnectionString: monitoring.outputs.applicationInsightsConnectionString
     applicationInsightsInstrumentationKey: monitoring.outputs.applicationInsightsInstrumentationKey
+    aiFoundryEndpoint: aiFoundry.outputs.endpoint
+    gpt4oMiniDeploymentName: aiFoundry.outputs.gpt4oMiniDeploymentName
+    aiFoundryAccountId: aiFoundry.outputs.accountId
     tags: tags
   }
 }
@@ -113,14 +127,13 @@ module acrRoleAssignment './modules/acr-role-assignment.bicep' = {
   }
 }
 
-// Deploy Azure AI Foundry
-module aiFoundry './modules/ai-foundry.bicep' = {
-  name: 'aiFoundry'
+// Assign Cognitive Services OpenAI User role to App Service managed identity
+module aiFoundryRoleAssignment './modules/ai-foundry-role-assignment.bicep' = {
+  name: 'aiFoundryRoleAssignment'
   scope: rg
   params: {
-    location: location
-    aiFoundryAccountName: _aiFoundryAccountName
-    tags: tags
+    aiFoundryAccountName: aiFoundry.outputs.accountName
+    principalId: appService.outputs.appServicePrincipalId
   }
 }
 

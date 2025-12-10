@@ -33,6 +33,15 @@ param applicationInsightsInstrumentationKey string
 @description('Tags for the resources')
 param tags object = {}
 
+@description('AI Foundry endpoint URL')
+param aiFoundryEndpoint string = ''
+
+@description('GPT-4o Mini deployment name')
+param gpt4oMiniDeploymentName string = ''
+
+@description('AI Foundry account resource ID for role assignment')
+param aiFoundryAccountId string = ''
+
 // App Service Plan (Linux for containers)
 resource appServicePlan 'Microsoft.Web/serverfarms@2023-12-01' = {
   name: appServicePlanName
@@ -92,6 +101,14 @@ resource appService 'Microsoft.Web/sites@2023-12-01' = {
         {
           name: 'ASPNETCORE_ENVIRONMENT'
           value: 'Production'
+        }
+        {
+          name: 'AI_FOUNDRY_ENDPOINT'
+          value: aiFoundryEndpoint
+        }
+        {
+          name: 'AI_FOUNDRY_DEPLOYMENT_NAME'
+          value: gpt4oMiniDeploymentName
         }
       ]
     }
