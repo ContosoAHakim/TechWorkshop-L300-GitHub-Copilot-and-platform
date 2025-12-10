@@ -42,7 +42,9 @@ namespace ZavaStorefront.Services
 
             try
             {
-                _logger.LogInformation("Sending message to AI: {Message}", message);
+                // Remove newline and carriage return characters to prevent log forging by user input
+                var sanitizedMessage = message.Replace("\r", "").Replace("\n", "");
+                _logger.LogInformation("Sending message to AI: {Message}", sanitizedMessage);
 
                 var chatClient = _client.GetChatClient(_deploymentName);
                 
